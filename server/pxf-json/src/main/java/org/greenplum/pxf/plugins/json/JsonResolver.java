@@ -216,7 +216,7 @@ public class JsonResolver extends BasePlugin implements Resolver {
             case BPCHAR:
             case TEXT:
             case VARCHAR:
-                oneField.val = val.toString();
+                oneField.val = val.isTextual() ? val.asText() : MAPPER.writeValueAsString(val);
                 break;
             default:
                 throw new IOException("Unsupported type " + type);

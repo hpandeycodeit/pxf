@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -293,6 +294,30 @@ public class JsonResolverTest {
         assertThrows(UnsupportedOperationException.class, () -> resolver.setFields(null));
     }
 
+    @Test
+    public void testGetArrayFieldAsTextColumn() throws Exception {
+        context.setTupleDescription(generateJsonSchemaWithArray());
+        resolver.afterPropertiesSet();
+        String jsonStr = "{\"type_int\": 1234, \"type_complex\": [1, 2, 3, 4]}";
+        OneRow row = new OneRow(null, jsonStr);
+        List<OneField> fields = assertRow(row, 2);
+
+        assertField(fields, 0, 1234, DataType.INTEGER);
+        assertField(fields, 1, "[1,2,3,4]", DataType.TEXT);
+    }
+
+    @Test
+    public void testGetObjectFieldAsTextColumn() throws Exception {
+        context.setTupleDescription(generateJsonSchemaWithArray());
+        resolver.afterPropertiesSet();
+        String jsonStr = "{\"type_int\": 1234, \"type_complex\": {\"key1\": 1, \"key2\": [1, 2, 3, 4]}}";
+        OneRow row = new OneRow(null, jsonStr);
+        List<OneField> fields = assertRow(row, 2);
+
+        assertField(fields, 0, 1234, DataType.INTEGER);
+        assertField(fields, 1, "{\"key1\":1,\"key2\":[1,2,3,4]}", DataType.TEXT);
+    }
+
     // helper functions for testing
     private List<OneField> assertRow(OneRow row, int numFields) throws Exception {
         List<OneField> fields = resolver.getFields(row);
@@ -324,5 +349,12 @@ public class JsonResolverTest {
         cd.add(new ColumnDescriptor("type_array[0]", DataType.TEXT.getOID(), 10, "text", null, true));
         cd.add(new ColumnDescriptor("type_array[1]", DataType.TEXT.getOID(), 11, "text", null, true));
         return cd;
+    }
+
+    private List<ColumnDescriptor> generateJsonSchemaWithArray() {
+        return Arrays.asList(
+                new ColumnDescriptor("type_int", DataType.INTEGER.getOID(), 0, "int4", null, true),
+                new ColumnDescriptor("type_complex", DataType.TEXT.getOID(), 1, "text", null, true)
+        );
     }
 }
