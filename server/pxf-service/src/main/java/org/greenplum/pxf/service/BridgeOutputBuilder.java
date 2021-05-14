@@ -430,6 +430,13 @@ public class BridgeOutputBuilder {
                 case NUMERIC:
                 case TIMESTAMP:
                 case DATE:
+                case BOOLARRAY:
+                case INT2ARRAY:
+                case INT4ARRAY:
+                case INT8ARRAY:
+                case FLOAT4ARRAY:
+                case FLOAT8ARRAY:
+                case TEXTARRAY:
                     gpdbOutput.setString(colIdx,
                             ObjectUtils.toString(val, null));
                     break;

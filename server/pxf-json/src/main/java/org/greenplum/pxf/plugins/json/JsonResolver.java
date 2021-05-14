@@ -19,11 +19,14 @@ package org.greenplum.pxf.plugins.json;
  * under the License.
  */
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.greenplum.pxf.api.OneField;
 import org.greenplum.pxf.api.OneRow;
 import org.greenplum.pxf.api.error.BadRecordException;
+import org.greenplum.pxf.api.error.PxfRuntimeException;
 import org.greenplum.pxf.api.io.DataType;
 import org.greenplum.pxf.api.model.BasePlugin;
 import org.greenplum.pxf.api.model.Resolver;
@@ -33,6 +36,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.StringJoiner;
 
 /**
  * This JSON resolver for PXF will decode a given object from the {@link JsonAccessor} into a row for GPDB. It will
@@ -218,6 +222,9 @@ public class JsonResolver extends BasePlugin implements Resolver {
             case VARCHAR:
                 oneField.val = val.isTextual() ? val.asText() : MAPPER.writeValueAsString(val);
                 break;
+            case TEXTARRAY:
+                oneField.val = addFieldAsPostgresArray(val);
+                break;
             default:
                 throw new IOException("Unsupported type " + type);
         }
@@ -265,5 +272,22 @@ public class JsonResolver extends BasePlugin implements Resolver {
      */
     private void addNullField(DataType type) {
         oneFieldList.add(new OneField(type.getOID(), null));
+    }
+
+    private String addFieldAsPostgresArray(JsonNode val) throws BadRecordException {
+        if (!val.isArray()) {
+            throw new BadRecordException(String.format("invalid ARRAY input value '%s'", val));
+        }
+
+        StringJoiner sj = new StringJoiner(",", "{", "}");
+        val.elements().forEachRemaining(n -> {
+            try {
+                sj.add(MAPPER.writeValueAsString(n));
+            } catch (JsonProcessingException e) {
+                new PxfRuntimeException(e);
+            }
+        });
+
+        return sj.toString();
     }
 }
