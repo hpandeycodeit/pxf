@@ -55,6 +55,8 @@ public enum DataType {
     FLOAT4ARRAY(1021),
     FLOAT8ARRAY(1022),
 
+    JSON(114),
+
     UNSUPPORTED_TYPE(-1);
 
     private static final int[] OID_ARRAY;

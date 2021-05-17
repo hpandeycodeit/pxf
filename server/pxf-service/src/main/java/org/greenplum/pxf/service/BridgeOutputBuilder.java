@@ -437,6 +437,7 @@ public class BridgeOutputBuilder {
                 case FLOAT4ARRAY:
                 case FLOAT8ARRAY:
                 case TEXTARRAY:
+                case JSON:
                     gpdbOutput.setString(colIdx,
                             ObjectUtils.toString(val, null));
                     break;

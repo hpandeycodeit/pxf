@@ -19,14 +19,11 @@ package org.greenplum.pxf.plugins.json;
  * under the License.
  */
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.greenplum.pxf.api.OneField;
 import org.greenplum.pxf.api.OneRow;
 import org.greenplum.pxf.api.error.BadRecordException;
-import org.greenplum.pxf.api.error.PxfRuntimeException;
 import org.greenplum.pxf.api.io.DataType;
 import org.greenplum.pxf.api.model.BasePlugin;
 import org.greenplum.pxf.api.model.Resolver;
@@ -223,7 +220,10 @@ public class JsonResolver extends BasePlugin implements Resolver {
                 oneField.val = val.isTextual() ? val.asText() : MAPPER.writeValueAsString(val);
                 break;
             case TEXTARRAY:
-                oneField.val = addFieldAsPostgresArray(val);
+                oneField.val = addFieldAsTextArray(val);
+                break;
+            case JSON:
+                oneField.val = MAPPER.writeValueAsString(val);
                 break;
             default:
                 throw new IOException("Unsupported type " + type);
@@ -274,17 +274,15 @@ public class JsonResolver extends BasePlugin implements Resolver {
         oneFieldList.add(new OneField(type.getOID(), null));
     }
 
-    private String addFieldAsPostgresArray(JsonNode val) throws BadRecordException {
+    private String addFieldAsTextArray(JsonNode val) throws BadRecordException {
         if (!val.isArray()) {
             throw new BadRecordException(String.format("invalid ARRAY input value '%s'", val));
         }
 
         StringJoiner sj = new StringJoiner(",", "{", "}");
         val.elements().forEachRemaining(n -> {
-            try {
-                sj.add(MAPPER.writeValueAsString(n));
-            } catch (JsonProcessingException e) {
-                new PxfRuntimeException(e);
+            if (n.isTextual()) {
+                sj.add(n.asText());
             }
         });
 
