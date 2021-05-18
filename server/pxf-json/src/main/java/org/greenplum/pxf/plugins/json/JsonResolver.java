@@ -19,11 +19,14 @@ package org.greenplum.pxf.plugins.json;
  * under the License.
  */
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.greenplum.pxf.api.OneField;
 import org.greenplum.pxf.api.OneRow;
 import org.greenplum.pxf.api.error.BadRecordException;
+import org.greenplum.pxf.api.error.PxfRuntimeException;
 import org.greenplum.pxf.api.io.DataType;
 import org.greenplum.pxf.api.model.BasePlugin;
 import org.greenplum.pxf.api.model.Resolver;
@@ -281,9 +284,18 @@ public class JsonResolver extends BasePlugin implements Resolver {
 
         StringJoiner sj = new StringJoiner(",", "{", "}");
         val.elements().forEachRemaining(n -> {
-            if (n.isTextual()) {
-                sj.add(n.asText());
+            String element;
+            try {
+                if (n.isTextual()) {
+                    element = StringEscapeUtils.escapeJava(n.asText());
+                } else {
+                    element = MAPPER.writeValueAsString(n);
+                }
+            } catch (JsonProcessingException e) {
+                throw new PxfRuntimeException(e);
             }
+
+            sj.add(StringEscapeUtils.escapeJava(element));
         });
 
         return sj.toString();
