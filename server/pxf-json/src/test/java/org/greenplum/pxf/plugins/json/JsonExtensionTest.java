@@ -35,6 +35,7 @@ import org.greenplum.pxf.api.model.RequestContext;
 import org.greenplum.pxf.api.model.Resolver;
 import org.greenplum.pxf.api.utilities.ColumnDescriptor;
 import org.greenplum.pxf.plugins.hdfs.HdfsDataFragmenter;
+import org.greenplum.pxf.plugins.hdfs.utilities.PgUtilities;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -485,7 +486,7 @@ public class JsonExtensionTest {
     }
 
     private Resolver getReadResolver(RequestContext data) {
-        JsonResolver jsonResolver = new JsonResolver();
+        JsonResolver jsonResolver = new JsonResolver(new PgUtilities());
         jsonResolver.setRequestContext(data);
         jsonResolver.afterPropertiesSet();
         return jsonResolver;
