@@ -21,21 +21,26 @@ package org.greenplum.pxf.plugins.hdfs.utilities;
 
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.text.translate.CharSequenceTranslator;
+import org.apache.commons.text.translate.LookupTranslator;
 import org.greenplum.pxf.api.error.PxfRuntimeException;
 import org.springframework.stereotype.Component;
 
-import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Utility methods for converting between Java types and Postgres types text format
  */
 @Component
 public class PgUtilities {
+
+    private static final char[] ARRAY_ELEMENT_SPECIAL_CHARS = new char[]{'{', '}', ',', '"', '\\', ' ', '\t', '\n', '\r', 0x0b, '\f'};
 
     /**
      * Split the outer-most Postgres array into its constituent elements using the default delimiter
@@ -120,6 +125,17 @@ public class PgUtilities {
 
     }
 
+    private static final CharSequenceTranslator UNESCAPE_ARRAY_ELEMENT;
+    static {
+        final Map<CharSequence, CharSequence> unescapeArrayElementMap = new HashMap<>();
+        unescapeArrayElementMap.put("\\\"", "\"");
+        unescapeArrayElementMap.put("\\\\", "\\");
+
+        UNESCAPE_ARRAY_ELEMENT = new LookupTranslator(
+                Collections.unmodifiableMap(unescapeArrayElementMap)
+        );
+    }
+
     /**
      * Returns a <code>String</code> for an unescaped Postgres array element.
      *
@@ -144,7 +160,17 @@ public class PgUtilities {
             endIndex -= 1;
         }
 
-        return StringEscapeUtils.unescapeJava(str.substring(beginIndx, endIndex));
+        return UNESCAPE_ARRAY_ELEMENT.translate(str.substring(beginIndx, endIndex));
+    }
+
+    private static final CharSequenceTranslator ESCAPE_ARRAY_ELEMENT;
+    static {
+        final Map<CharSequence, CharSequence> escapeArrayElementMap = new HashMap<>();
+        escapeArrayElementMap.put("\"", "\\\"");
+        escapeArrayElementMap.put("\\", "\\\\");
+        ESCAPE_ARRAY_ELEMENT = new LookupTranslator(
+                Collections.unmodifiableMap(escapeArrayElementMap)
+        );
     }
 
     /**
@@ -170,35 +196,12 @@ public class PgUtilities {
             return "\"\"";
         }
 
-        boolean needsQuote = false;
-        StringWriter writer = new StringWriter(str.length() * 2);
+        boolean needsQuote = StringUtils.containsAny(str, ARRAY_ELEMENT_SPECIAL_CHARS);
 
-        char[] chars = str.toCharArray();
-        for (char c : chars) {
-            switch (c) {
-                case '"':
-                case '\\':
-                    needsQuote = true;
-                    writer.write('\\');
-                    writer.write(c);
-                    break;
-                case '{':
-                case '}':
-                case ',':
-                    needsQuote = true;
-                    writer.write(c);
-                    break;
-                default:
-                    if (arrayIsSpace(c)) {
-                        needsQuote = true;
-                    }
-                    writer.write(c);
-                    break;
-            }
-        }
+        String escapedStr = ESCAPE_ARRAY_ELEMENT.translate(str);
 
         String fmtStr = needsQuote ? "\"%s\"" : "%s";
-        return String.format(fmtStr, writer);
+        return String.format(fmtStr, escapedStr);
     }
 
     /**
@@ -309,10 +312,6 @@ public class PgUtilities {
         } else {
             throw new NumberFormatException("Value out of range for byte. Value:\"" + s + "\" Radix:" + radix);
         }
-    }
-
-    private boolean arrayIsSpace(char c) {
-        return (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == 0x0b || c == '\f');
     }
 
     private boolean isQuote(char[] value, int index) {

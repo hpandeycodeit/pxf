@@ -28,6 +28,7 @@ dependencies {
     implementation("commons-io:commons-io")
     implementation("commons-lang:commons-lang")
     implementation("org.apache.commons:commons-lang3")
+    implementation("org.apache.commons:commons-text")
     implementation("org.slf4j:slf4j-api")
 
     implementation("org.apache.avro:avro-mapred:1.7.7") { transitive = false }
