@@ -19,7 +19,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static org.greenplum.pxf.api.io.DataType.*;
+import static org.greenplum.pxf.api.io.DataType.BIGINT;
+import static org.greenplum.pxf.api.io.DataType.BOOLARRAY;
+import static org.greenplum.pxf.api.io.DataType.BOOLEAN;
+import static org.greenplum.pxf.api.io.DataType.BPCHAR;
+import static org.greenplum.pxf.api.io.DataType.BYTEA;
+import static org.greenplum.pxf.api.io.DataType.DATE;
+import static org.greenplum.pxf.api.io.DataType.FLOAT8;
+import static org.greenplum.pxf.api.io.DataType.INTEGER;
+import static org.greenplum.pxf.api.io.DataType.NUMERIC;
+import static org.greenplum.pxf.api.io.DataType.REAL;
+import static org.greenplum.pxf.api.io.DataType.SMALLINT;
+import static org.greenplum.pxf.api.io.DataType.TEXT;
+import static org.greenplum.pxf.api.io.DataType.TIMESTAMP;
+import static org.greenplum.pxf.api.io.DataType.VARCHAR;
 import static org.greenplum.pxf.plugins.hdfs.orc.ORCVectorizedAccessor.MAP_BY_POSITION_OPTION;
 
 /**
