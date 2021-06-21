@@ -19,19 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import static org.greenplum.pxf.api.io.DataType.BIGINT;
-import static org.greenplum.pxf.api.io.DataType.BOOLEAN;
-import static org.greenplum.pxf.api.io.DataType.BPCHAR;
-import static org.greenplum.pxf.api.io.DataType.BYTEA;
-import static org.greenplum.pxf.api.io.DataType.DATE;
-import static org.greenplum.pxf.api.io.DataType.FLOAT8;
-import static org.greenplum.pxf.api.io.DataType.INTEGER;
-import static org.greenplum.pxf.api.io.DataType.NUMERIC;
-import static org.greenplum.pxf.api.io.DataType.REAL;
-import static org.greenplum.pxf.api.io.DataType.SMALLINT;
-import static org.greenplum.pxf.api.io.DataType.TEXT;
-import static org.greenplum.pxf.api.io.DataType.TIMESTAMP;
-import static org.greenplum.pxf.api.io.DataType.VARCHAR;
+import static org.greenplum.pxf.api.io.DataType.*;
 import static org.greenplum.pxf.plugins.hdfs.orc.ORCVectorizedAccessor.MAP_BY_POSITION_OPTION;
 
 /**
@@ -144,7 +132,7 @@ public class ORCVectorizedResolver extends BasePlugin implements ReadVectorizedR
                     // will have 5 columns
                     oneFields = ORCVectorizedMappingFunctions
                             .getNullResultSet(columnDescriptor.columnTypeCode(), batchSize);
-                } else if (orcColumn.getCategory().isPrimitive()) {
+                } else if (orcColumn.getCategory().isPrimitive() || orcColumn.getCategory() == TypeDescription.Category.LIST) {
                     oneFields = functions[columnIndex]
                             .apply(vectorizedBatch, vectorizedBatch.cols[columnIndex], typeOidMappings[columnIndex]);
                     columnIndex++;
@@ -262,6 +250,10 @@ public class ORCVectorizedResolver extends BasePlugin implements ReadVectorizedR
                 case CHAR:
                     functions[i] = ORCVectorizedMappingFunctions::textMapper;
                     typeOidMappings[i] = BPCHAR.getOID();
+                    break;
+                case LIST:
+                    functions[i] = ORCVectorizedMappingFunctions::booleanListMapper;
+                    typeOidMappings[i] = BOOLARRAY.getOID();
                     break;
             }
         }

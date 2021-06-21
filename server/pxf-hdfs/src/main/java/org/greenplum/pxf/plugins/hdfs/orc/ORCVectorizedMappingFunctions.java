@@ -1,12 +1,6 @@
 package org.greenplum.pxf.plugins.hdfs.orc;
 
-import org.apache.hadoop.hive.ql.exec.vector.BytesColumnVector;
-import org.apache.hadoop.hive.ql.exec.vector.ColumnVector;
-import org.apache.hadoop.hive.ql.exec.vector.DecimalColumnVector;
-import org.apache.hadoop.hive.ql.exec.vector.DoubleColumnVector;
-import org.apache.hadoop.hive.ql.exec.vector.LongColumnVector;
-import org.apache.hadoop.hive.ql.exec.vector.TimestampColumnVector;
-import org.apache.hadoop.hive.ql.exec.vector.VectorizedRowBatch;
+import org.apache.hadoop.hive.ql.exec.vector.*;
 import org.apache.hadoop.hive.serde2.io.HiveDecimalWritable;
 import org.greenplum.pxf.api.GreenplumDateTime;
 import org.greenplum.pxf.api.OneField;
@@ -63,6 +57,43 @@ class ORCVectorizedMappingFunctions {
                     : null;
             result[rowIndex] = new OneField(oid, value);
         }
+        return result;
+    }
+
+    public static OneField[] booleanListMapper(VectorizedRowBatch batch, ColumnVector columnVector, int oid) {
+        ListColumnVector listColumnVector = (ListColumnVector) columnVector;
+        if (listColumnVector == null) {
+            return getNullResultSet(oid, batch.size);
+        }
+
+        OneField[] result = new OneField[batch.size];
+        int m = listColumnVector.isRepeating ? 0 : 1;
+        int row;
+        LongColumnVector child = (LongColumnVector) listColumnVector.child;
+
+        for (int rowIndex = 0; rowIndex < batch.size; rowIndex++) {
+            row = m * rowIndex;
+
+            if (listColumnVector.isNull[row]) {
+                result[rowIndex] = new OneField(oid, null);
+                continue;
+            }
+
+            int length = (int) listColumnVector.lengths[row];
+            int offset = (int) listColumnVector.offsets[row];
+            Boolean[] value = new Boolean[length];
+            for (int i = 0; i < length; i++) {
+                int childRow = offset + i;
+                if (child.noNulls || !child.isNull[childRow]) {
+                    value[i] = child.vector[childRow] == 1;
+                } else {
+                    value[i] = null;
+                }
+            }
+
+            result[rowIndex] = new OneField(oid, value);
+        }
+
         return result;
     }
 
