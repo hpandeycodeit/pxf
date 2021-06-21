@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.StringJoiner;
 
 /**
  * Maps vectors of ORC types to a list of OneFields.
@@ -81,17 +82,17 @@ class ORCVectorizedMappingFunctions {
 
             int length = (int) listColumnVector.lengths[row];
             int offset = (int) listColumnVector.offsets[row];
-            Boolean[] value = new Boolean[length];
+            StringJoiner stringJoiner = new StringJoiner(",", "{", "}");
             for (int i = 0; i < length; i++) {
                 int childRow = offset + i;
                 if (child.noNulls || !child.isNull[childRow]) {
-                    value[i] = child.vector[childRow] == 1;
+                    stringJoiner.add(child.vector[childRow] == 1 ? "t" : "f");
                 } else {
-                    value[i] = null;
+                    stringJoiner.add("NULL");
                 }
             }
 
-            result[rowIndex] = new OneField(oid, value);
+            result[rowIndex] = new OneField(oid, stringJoiner.toString());
         }
 
         return result;
