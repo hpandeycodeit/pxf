@@ -36,9 +36,9 @@ import static org.greenplum.pxf.api.io.DataType.VARCHAR;
 import static org.greenplum.pxf.plugins.hdfs.orc.ORCVectorizedAccessor.MAP_BY_POSITION_OPTION;
 
 /**
- * Resolves ORC VectorizedRowBatch into lists of List<OneField>. Only primitive
- * types are supported. Currently, Timestamp and Timestamp with TimeZone are
- * not supported. The supported mapping is as follows:
+ * Resolves ORC VectorizedRowBatch into lists of List<OneField>. Currently,
+ * Timestamp and Timestamp with TimeZone are not supported. The supported
+ * scalar mapping is as follows:
  * <p>
  * ---------------------------------------------------------------------------
  * | ORC Physical Type | ORC Logical Type   | Greenplum Type | Greenplum OID |
@@ -58,6 +58,15 @@ import static org.greenplum.pxf.plugins.hdfs.orc.ORCVectorizedAccessor.MAP_BY_PO
  * |  binary           |  decimal           |  NUMERIC       |  1700         |
  * |  binary           |  timestamp         |  TIMESTAMP     |  1114         |
  * ---------------------------------------------------------------------------
+ *
+ * Lists are the only supported compound type and only lists of support scalar
+ * types are supported. The supported compound mapping is as follows:
+ * <p>
+ * ------------------------------------------------------
+ * | ORC Compound Type | Greenplum Type | Greenplum OID |
+ * ------------------------------------------------------
+ * | array<boolean>    | BOOLEAN[]      | 1000          |
+ * ------------------------------------------------------
  */
 public class ORCVectorizedResolver extends BasePlugin implements ReadVectorizedResolver, Resolver {
 
