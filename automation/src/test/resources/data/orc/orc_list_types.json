@@ -1,0 +1,5 @@
+{"id": 1, "bool_arr": null}
+{"id": 2, "bool_arr": [null]}
+{"id": 3, "bool_arr": [true]}
+{"id": 4, "bool_arr": [true, false]}
+{"id": 5, "bool_arr": [true, false, null]}

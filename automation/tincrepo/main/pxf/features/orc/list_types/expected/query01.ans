@@ -1,0 +1,24 @@
+-- start_ignore
+-- end_ignore
+-- @description query01 for list ORC data types
+\pset null 'NIL'
+Null display is "NIL".
+SELECT * FROM pxf_orc_list_types ORDER BY id;
+ id |  bool_arr
+----+------------
+  1 | NIL
+  2 | {NULL}
+  3 | {t}
+  4 | {t,f}
+  5 | {t,f,NULL}
+(5 rows)
+
+SELECT id, bool_arr[1] FROM pxf_orc_list_types ORDER BY id;
+ id | bool_arr
+----+----------
+  1 | NIL
+  2 | NIL
+  3 | t
+  4 | t
+  5 | t
+(5 rows)

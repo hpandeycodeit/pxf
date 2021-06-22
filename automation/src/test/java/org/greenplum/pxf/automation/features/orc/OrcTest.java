@@ -11,6 +11,7 @@ public class OrcTest extends BaseFeature {
     private static final String ORC_PRIMITIVE_TYPES = "orc_types.orc";
     private static final String PXF_ORC_TABLE = "pxf_orc_primitive_types";
     private static final String ORC_PRIMITIVE_TYPES_UNORDERED_SUBSET = "orc_types_unordered_subset.orc";
+    private static final String ORC_LIST_TYPES = "orc_list_types.orc";
 
     private static final String[] ORC_TABLE_COLUMNS = {
             "id      integer",
@@ -42,6 +43,11 @@ public class OrcTest extends BaseFeature {
             "bin     BYTEA"
     };
 
+    private static final String[] ORC_LIST_TYPES_TABLE_COLUMNS = new String[]{
+            "id       integer",
+            "bool_arr boolean[]"
+    };
+
     private String hdfsPath;
     private ProtocolEnum protocol;
 
@@ -54,6 +60,7 @@ public class OrcTest extends BaseFeature {
         String resourcePath = localDataResourcesFolder + "/orc/";
         hdfs.copyFromLocal(resourcePath + ORC_PRIMITIVE_TYPES, hdfsPath + ORC_PRIMITIVE_TYPES);
         hdfs.copyFromLocal(resourcePath + ORC_PRIMITIVE_TYPES_UNORDERED_SUBSET, hdfsPath + ORC_PRIMITIVE_TYPES_UNORDERED_SUBSET);
+        hdfs.copyFromLocal(resourcePath + ORC_LIST_TYPES, hdfsPath + ORC_LIST_TYPES);
 
         prepareReadableExternalTable(PXF_ORC_TABLE, ORC_TABLE_COLUMNS, hdfsPath + ORC_PRIMITIVE_TYPES);
     }
@@ -93,6 +100,12 @@ public class OrcTest extends BaseFeature {
     public void orcPredicatePushDownMapByPosition() throws Exception {
         prepareReadableExternalTable(PXF_ORC_TABLE, ORC_TABLE_COLUMNS, hdfsPath + ORC_PRIMITIVE_TYPES, true);
         runTincTest("pxf.features.orc.pushdown.runTest");
+    }
+
+    @Test(groups = {"features", "gpdb", "security", "hcfs"})
+    public void orcReadLists() throws Exception {
+        prepareReadableExternalTable("pxf_orc_list_types", ORC_LIST_TYPES_TABLE_COLUMNS, hdfsPath + ORC_LIST_TYPES);
+        runTincTest("pxf.features.orc.list_types.runTest");
     }
 
     private void prepareReadableExternalTable(String name, String[] fields, String path) throws Exception {
