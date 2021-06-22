@@ -52,3 +52,18 @@ Finally, run the script to generate the `orc_types_unordered_subset.orc` file:
 
 The `orc_types_unordered_subset.orc` file will be copied to the directory
 where you ran the script.
+
+## Generating ORC files with list fields
+
+### Requirements
+
+- [ORC Tools Uber Jar](https://repo1.maven.org/maven2/org/apache/orc/orc-tools/1.6.8/orc-tools-1.6.8-uber.jar)
+
+### Generate the orc_list_types.orc file
+
+```shell
+export ORC_TOOLS="<path-to-orc-tools-uber-jar>"
+export ORC_LIST_TYPES_SCHEMA="struct<id:int,bool_arr:array<boolean>>"
+
+java -jar "${ORC_TOOLS}" convert -s "${ORC_LIST_TYPES_SCHEMA}" -o orc_list_types.orc orc_list_types.json
+```
