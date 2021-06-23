@@ -1,0 +1,212 @@
+---
+title: 'Example: Reading From a Trino (formerly Presto SQL) Table'
+---
+
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+
+In this example, you:
+
+- Create a MySQL database and table, and insert data into the table
+- Create a MySQL user and assign all privileges on the table to the user
+- Configure the PXF JDBC connector to access the MySQL database
+- Create a PXF readable external table that references the MySQL table
+- Read the data in the MySQL table using PXF
+- Create a PXF writable external table that references the MySQL table
+- Write data to the MySQL table using PXF
+- Read the data in the MySQL table again
+
+## <a id="ex_create_trinotbl"></a>Enable the Trino TPCH Catalog
+
+In the examples below, we assume that your Trino server has been configured with the included `tpch` connector.
+See [Trino Documentation - TPCH Connector](https://trino.io/docs/current/connector/tpch.html) for instructions on configuring this connector.
+
+## <a id="ex_jdbconfig"></a>Configure the Trino Connector
+
+You must create a JDBC server configuration for Trino, download the Trino driver JAR file to your system, copy the JAR file to the PXF user configuration directory, synchronize the PXF configuration, and then restart PXF.
+
+This procedure will typically be performed by the Greenplum Database administrator.
+
+1. Log in to the Greenplum Database master node:
+
+    ```shell
+    $ ssh gpadmin@<gpmaster>
+    ```
+
+1. Download the Trino JDBC driver and place it under `$PXF_BASE/lib`.
+   If you [relocated $PXF_BASE](about_pxf_dir.html#movebase), make sure you use the updated location.
+   See [Trino Documentation - JDBC Driver](https://trino.io/docs/current/installation/jdbc.html) for instructions on downloading the Trino JDBC driver.
+   The following example downloads the driver and places it under `$PXF_BASE/lib`:
+
+    ```shell
+    $ cd /usr/local/pxf-gp<version>/lib
+    $ wget <url-to-trino-jdbc-driver>
+    ```
+
+1. Synchronize the PXF configuration, and then restart PXF:
+
+    ```shell
+    gpadmin@gpmaster$ pxf cluster sync
+    gpadmin@gpmaster$ pxf cluster restart
+    ```
+
+1. Create a JDBC server configuration for Trino as described in [Example Configuration Procedure](jdbc_cfg.html#cfg_proc), naming the server directory `trino`.
+   The `jdbc-site.xml` file contents should look similar to the following (substitute your Trino host system for `trinoserverhost`):
+
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+        <property>
+            <name>jdbc.driver</name>
+            <value>io.trino.jdbc.TrinoDriver</value>
+            <description>Class name of the JDBC driver</description>
+        </property>
+        <property>
+            <name>jdbc.url</name>
+            <value>jdbc:trino://trinoserverhost:8443</value>
+            <description>The URL that the JDBC driver can use to connect to the database</description>
+        </property>
+        <property>
+            <name>jdbc.user</name>
+            <value>trino-user</value>
+            <description>User name for connecting to the database</description>
+        </property>
+        <property>
+            <name>jdbc.password</name>
+            <value>trino-pw</value>
+            <description>Password for connecting to the database</description>
+        </property>
+
+        <!-- Connection properties -->
+        <property>
+            <name>jdbc.connection.property.SSL</name>
+            <value>true</value>
+            <description>Use HTTPS for connections; authentication using username/password requires SSL to be enabled.</description>
+        </property>
+    </configuration>
+    ```
+
+1. (**Optional:** If your Trino server has been configured with a [Globally Trusted Certificate](https://trino.io/docs/current/security/tls.html#add-a-tls-certificate), you can skip this step.)
+   If your Trino server has been configured to use _corporate trusted certificates_ or _generated self-signed certificates_, then PXF will need a copy of the server's certificate in a PEM-encoded file or a Java Keystore (JKS) file.
+   **Note:** You do not need the Trino server's private key.
+   Copy the certificate to `$PXF_BASE/servers/trino`; storing the server's certificate inside `$PXF_BASE/servers/trino` ensures that `pxf cluster sync` copies the certificate to all segment hosts.
+
+   ```shell
+   cp <path-to-trino-server-certificate> `$PXF_BASE/servers/trino`
+   ```
+
+   Add the following connection properties to the `jdc-site.xml` you created in the previous step:
+
+   ```xml
+   <configuration>
+   ...
+       <property>
+           <name>jdbc.connection.property.SSLTrustStorePath</name>
+           <value>$PXF_BASE/servers/trino/trino.cert</value>
+           <description>The location of the Java TrustStore file that will be used to validate HTTPS server certificates.</description>
+       </property>
+       <!-- the following property is only required if the server's certificate is stored in a JKS file; if using a PEM-encoded file, it should be omitted.-->
+       <!--
+       <property>
+           <name>jdbc.connection.property.SSLTrustStorePassword</name>
+           <value>java-keystore-password</value>
+           <description>The password for the TrustStore.</description>
+       </property>
+       -->
+   </configuration>
+   ```
+
+1. Synchronize the PXF server configuration to the Greenplum Database cluster:
+
+    ``` shell
+    gpadmin@gpmaster$ pxf cluster sync
+    ```
+
+## <a id="ex_readjdbc"></a>Read from a Trino Table
+
+Perform the following procedure to create a PXF external table that references the `lineitem` Trino table and reads the data in the table:
+
+1. Create the PXF external table specifying the `jdbc` profile.
+   The Trino _catalog_ and _schema_ can be referenced in the `LOCATION` URL; for example, to read the `lineitem` table in the `tiny` schema of the `tpch` catalog:
+
+    ``` sql
+    CREATE EXTERNAL TABLE pxf_trino_tpch_lineitem (
+        orderkey       bigint,
+        partkey        bigint,
+        suppkey        bigint,
+        linenumber     integer,
+        quantity       double precision,
+        extendedprice  double precision,
+        discount       double precision,
+        tax            double precision,
+        returnflag     varchar(1),
+        linestatus     varchar(1),
+        shipdate       date,
+        commitdate     date,
+        receiptdate    date,
+        shipinstruct   varchar(25),
+        shipmode       varchar(10),
+        comment        varchar(44)
+    )
+    LOCATION('pxf://tpch.tiny.lineitem?PROFILE=jdbc&SERVER=trino')
+    FORMAT 'CUSTOM' (formatter='pxfwritable_import');
+    ```
+
+1. Count the number of rows in the `pxf_trino_tpch_lineitem` table:
+
+    ``` sql
+    gpadmin=# SELECT COUNT(*) FROM pxf_trino_tpch_lineitem;
+     count
+    -------
+     60175
+    (1 row)
+    ```
+
+1. Query the data in `pxf_prest_tpch_lineitem` using column project, aggregates, and predicates.
+
+    ```sql
+    gpadmin=# SELECT
+    gpadmin-#     l.returnflag,
+    gpadmin-#     l.linestatus,
+    gpadmin-#     sum(l.quantity)                                       AS sum_qty,
+    gpadmin-#     sum(l.extendedprice)                                  AS sum_base_price,
+    gpadmin-#     sum(l.extendedprice * (1 - l.discount))               AS sum_disc_price,
+    gpadmin-#     sum(l.extendedprice * (1 - l.discount) * (1 + l.tax)) AS sum_charge,
+    gpadmin-#     avg(l.quantity)                                       AS avg_qty,
+    gpadmin-#     avg(l.extendedprice)                                  AS avg_price,
+    gpadmin-#     avg(l.discount)                                       AS avg_disc,
+    gpadmin-#     count(*)                                              AS count_order
+    gpadmin-# FROM
+    gpadmin-#   pxf_trino_tpch_lineitem AS l
+    gpadmin-# WHERE
+    gpadmin-#   l.shipdate <= DATE '1998-12-01' - INTERVAL '90' DAY
+    gpadmin-# GROUP BY
+    gpadmin-#   l.returnflag,
+    gpadmin-#   l.linestatus
+    gpadmin-# ORDER BY
+    gpadmin-#   l.returnflag,
+    gpadmin-#   l.linestatus;
+    returnflag | linestatus | sum_qty |  sum_base_price  |  sum_disc_price  |    sum_charge    |     avg_qty      |    avg_price     |      avg_disc      | count_order
+    ------------+------------+---------+------------------+------------------+------------------+------------------+------------------+--------------------+-------------
+    A          | F          |  380456 | 532348211.649998 | 505822441.486101 | 526165934.000838 | 25.5751546114547 | 35785.7093069372 | 0.0500813390696396 |       14876
+    N          | F          |    8971 |      12384801.37 |     11798257.208 |  12282485.056933 | 25.7787356321839 | 35588.5096839081 | 0.0477586206896551 |         348
+    N          | O          |  742802 |    1041502841.45 | 989737518.634603 | 1029418531.52335 | 25.4549878345499 | 35691.1292090744 | 0.0499311195640845 |       29181
+    R          | F          |  381449 | 534594445.350002 | 507996454.406698 | 528524219.358904 | 25.5971681653469 | 35874.0065326803 | 0.0498275399275238 |       14902
+    (4 rows)
+    ```
