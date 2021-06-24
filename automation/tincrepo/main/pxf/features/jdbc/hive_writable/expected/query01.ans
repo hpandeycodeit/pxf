@@ -1,0 +1,8 @@
+-- @description query01 for JDBC Hive writable query
+INSERT INTO pxf_jdbc_hive_writable VALUES (1, 'hello pxf');
+INSERT 0 1
+SELECT * FROM pxf_jdbc_hive_readable ORDER BY id;
+ id | greeting
+----+-----------
+  1 | hello pxf
+(1 row)
