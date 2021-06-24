@@ -144,7 +144,7 @@ public class ORCVectorizedResolver extends BasePlugin implements ReadVectorizedR
                     // will have 5 columns
                     oneFields = ORCVectorizedMappingFunctions
                             .getNullResultSet(columnDescriptor.columnTypeCode(), batchSize);
-                } else if (orcColumn.getCategory().isPrimitive()) {
+                } else if (orcColumn.getCategory().isPrimitive() || orcColumn.getCategory() == TypeDescription.Category.List) {
                     oneFields = functions[columnIndex]
                             .apply(vectorizedBatch, vectorizedBatch.cols[columnIndex], typeOidMappings[columnIndex]);
                     columnIndex++;
@@ -263,6 +263,9 @@ public class ORCVectorizedResolver extends BasePlugin implements ReadVectorizedR
                     functions[i] = ORCVectorizedMappingFunctions::textMapper;
                     typeOidMappings[i] = BPCHAR.getOID();
                     break;
+                case LIST: 
+                    functions[i] = ORCVectorizedMappingFunctions::listBooleanMapper;
+                    typeOidMappings[i] = BOOLARRAY.getOID();
             }
         }
     }
