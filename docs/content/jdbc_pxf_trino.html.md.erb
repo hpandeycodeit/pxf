@@ -23,14 +23,9 @@ under the License.
 
 In this example, you:
 
-- Create a MySQL database and table, and insert data into the table
-- Create a MySQL user and assign all privileges on the table to the user
-- Configure the PXF JDBC connector to access the MySQL database
-- Create a PXF readable external table that references the MySQL table
-- Read the data in the MySQL table using PXF
-- Create a PXF writable external table that references the MySQL table
-- Write data to the MySQL table using PXF
-- Read the data in the MySQL table again
+- Configure the PXF JDBC connector to access the Trino database
+- Create a PXF readable external table that references the Trino table
+- Read the data in the Trino table using PXF
 
 ## <a id="ex_create_trinotbl"></a>Enable the Trino TPCH Catalog
 
