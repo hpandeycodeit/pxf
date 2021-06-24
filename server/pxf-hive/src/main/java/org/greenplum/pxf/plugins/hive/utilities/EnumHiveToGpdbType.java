@@ -49,6 +49,7 @@ public enum EnumHiveToGpdbType {
     VarcharType("varchar", EnumGpdbType.VarcharType, "[(,)]"),
     CharType("char", EnumGpdbType.BpcharType, "[(,)]"),
     ArrayType("array", EnumGpdbType.TextType, "[<,>]", true),
+    BoolArrayType("array", EnumGpdbType.BoolArrayType, "[<,>]", true),
     MapType("map", EnumGpdbType.TextType, "[<,>]", true),
     StructType("struct", EnumGpdbType.TextType, "[<,>]", true),
     UnionType("uniontype", EnumGpdbType.TextType, "[<,>]", true);
@@ -115,10 +116,22 @@ public enum EnumHiveToGpdbType {
     public static EnumHiveToGpdbType getHiveToGpdbType(String hiveType) {
         for (EnumHiveToGpdbType t : values()) {
             String hiveTypeName = hiveType;
+            String primitiveTypeName = hiveType;
             String splitExpression = t.getSplitExpression();
             if (splitExpression != null) {
                 String[] tokens = hiveType.split(splitExpression);
                 hiveTypeName = tokens[0];
+                primitiveTypeName = tokens[tokens.length-1];
+                for (int i = 0; i < tokens.length-1; i++) {
+                    if (!tokens[i].equals("array")) {
+                        throw new UnsupportedTypeException("Unable to map Hive's type: "
+                                + hiveType + " to GPDB's type");
+                    }
+                }
+                if (primitiveTypeName.equals("boolean")) {
+                    return EnumHiveToGpdbType.BoolArrayType;
+                }
+
             }
 
             if (t.getTypeName().toLowerCase().equals(hiveTypeName.toLowerCase())) {

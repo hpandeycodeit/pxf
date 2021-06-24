@@ -57,7 +57,8 @@ public enum EnumGpdbType {
     TimestampType("timestamp", DataType.TIMESTAMP),
     BoolType("bool", DataType.BOOLEAN),
     NumericType("numeric", DataType.NUMERIC, (byte) 2),
-    BpcharType("bpchar", DataType.BPCHAR, (byte) 1);
+    BpcharType("bpchar", DataType.BPCHAR, (byte) 1),
+    BoolArrayType("bool[]", DataType.BOOLARRAY);
 
     private DataType dataType;
     private String typeName;

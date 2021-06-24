@@ -391,7 +391,7 @@ public class HiveResolver extends BasePlugin implements Resolver {
                 } else {
                     List<OneField> listRecord = traverseList(obj,
                             (ListObjectInspector) objInspector);
-                    addOneFieldToRecord(record, DataType.TEXT, String.format("[%s]",
+                    addOneFieldToRecord(record, DataType.BOOLARRAY, String.format("{%s}",
                             HdfsUtilities.toString(listRecord, collectionDelim)));
                 }
                 break;
