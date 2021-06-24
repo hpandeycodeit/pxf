@@ -66,6 +66,43 @@ class ORCVectorizedMappingFunctions {
         return result;
     }
 
+
+    /** 
+     * Function for listBooleanMapper. 
+     * It uses ListColumnVector for the mapping and then converts 
+     * child objects to type (LongColumnVector) 
+     * And add List<Boolean> type tp the OneField result
+     **/
+    public static OneField[] listBooleanMapper(VectorizedRowBatch batch, ColumnVector columnVector, int oid) {
+        ListColumnVector lcv = (ListColumnVector) columnVector;
+        LongColumnVector child = (LongColumnVector) lcv.child;
+
+        if (lcv == null)
+            return getNullResultSet(oid, batch.size);
+
+        OneField[] result = new OneField[batch.size];
+        int m = lcv.isRepeating ? 0 : 1;
+        int rowId;
+        
+        for (int rowIndex = 0; rowIndex < batch.size; rowIndex++) {
+            rowId = m * rowIndex;
+            long offset = lcv.offsets[rowId];
+            long length = lcv.lengths[rowId];
+            List<Boolean>  value = ArrayList<Boolean>();
+            for( int i = offset; i<= offset+ length -1; i++)
+            {
+                value.add((child.noNulls || !child.isNull[i])
+                        ? child.vector[i] == 1
+                        : null);
+
+            }
+            result[rowIndex] = new OneField(oid, value);
+            
+        }
+        return result;
+    }
+
+
     public static OneField[] shortMapper(VectorizedRowBatch batch, ColumnVector columnVector, int oid) {
         LongColumnVector lcv = (LongColumnVector) columnVector;
         if (lcv == null)
