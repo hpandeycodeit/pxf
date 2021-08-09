@@ -53,7 +53,16 @@ The PXF JDBC connector supports the following data types:
 
 Any data type not listed above is not supported by the PXF JDBC connector.
 
-**Note**: The JDBC connector does not support reading or writing Hive data stored as a byte array (`byte[]`).
+### <a id="datatypes_hive"></a>About Accessing Hive via JDBC
+
+PXF includes version 1.1.0 of the Hive JDBC driver. This version does **not** support the following data types when you use the PXF JDBC connector to operate on a Hive table:
+
+| Data Type | Fixed in Hive JDBC Driver | Upstream Issue | Operations Not Supported |
+|-----------|---------------------------|----------------| ---------- |
+| NUMERIC   | 2.3.0                     | [HIVE-13614](https://issues.apache.org/jira/browse/HIVE-13614) | Write |
+| TIMESTAMP | 2.0.0                     | [HIVE-11748](https://issues.apache.org/jira/browse/HIVE-11748) | Write |
+| DATE      | 1.3.0, 2.0.0              | [HIVE-11024](https://issues.apache.org/jira/browse/HIVE-11024) | Write |
+| BYTEA     | N/A                       | N/A | Read, Write |
 
 ## <a id="queryextdata"></a>Accessing an External SQL Database
 The PXF JDBC connector supports a single profile named `jdbc`. You can both read data from and write data to an external SQL database table with this profile. You can also use the connector to run a static, named query in external SQL database and read the results.
@@ -169,11 +178,12 @@ When you specify the `PARTITION_BY` option, tune the `INTERVAL` value and unit b
 
 ## <a id="examples"></a>Examples
 
-Refer to the following sections for examples on how to read from and write to specific SQL databases:
+Refer to the following topics for examples on how to use PXF to read data from and write data to specific SQL databases:
 
 - [Reading From and Writing to a PostgreSQL Table](jdbc_pxf_postgresql.html)
 - [Reading From and Writing to a MySQL Table](jdbc_pxf_mysql.html)
 - [Reading From and Writing to an Oracle Table](jdbc_pxf_oracle.html)
+- [Reading From and Writing to a Trino Table](jdbc_pxf_trino.html)
 
 ## <a id="about_nq"></a>About Using Named Queries
 
